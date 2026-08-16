@@ -57,6 +57,57 @@ test('findTailscaleAddress: 없으면 null', () => {
   );
 });
 
+test('listReachableAddresses: 루프백을 빼고 Tailscale 을 먼저 보여 준다', () => {
+  const interfaces = {
+    lo: [{ family: 'IPv4', address: '127.0.0.1', internal: true }],
+    wlan0: [{ family: 'IPv4', address: '192.168.0.5', internal: false }],
+    tun0: [{ family: 'IPv4', address: '100.101.102.103', internal: false }],
+    eth0: [{ family: 'IPv6', address: 'fe80::1', internal: false }],
+  };
+
+  const found = tailscale.listReachableAddresses(interfaces);
+
+  // 127.0.0.1 은 다른 기기에서 못 쓰므로 빠져야 하고, IPv6 도 대상이 아니다
+  assert.deepEqual(found, [
+    { iface: 'tun0', address: '100.101.102.103', tailscale: true },
+    { iface: 'wlan0', address: '192.168.0.5', tailscale: false },
+  ]);
+});
+
+test('listReachableAddresses: 쓸 수 있는 주소가 없으면 빈 배열', () => {
+  const onlyLoopback = { lo: [{ family: 'IPv4', address: '127.0.0.1', internal: true }] };
+  assert.deepEqual(tailscale.listReachableAddresses(onlyLoopback), []);
+});
+
+test('0.0.0.0 에 바인딩하면 실제로 넣어야 할 주소를 로그에 알려 준다', async (t) => {
+  const lines = [];
+  const hub = await server.start({
+    host: '0.0.0.0',
+    port: 0,
+    dbFile: ':memory:',
+    log: (m) => lines.push(m),
+  });
+  t.after(() => hub.close());
+
+  const joined = lines.join('\n');
+  assert.match(joined, /앱 설정에 넣을 주소/);
+  // 0.0.0.0 을 그대로 넣으면 안 된다는 것이 로그에 드러나야 한다
+  assert.match(joined, /0\.0\.0\.0 을 그대로 넣으면 접속되지 않습니다|IPv4 주소를 찾지 못했습니다/);
+});
+
+test('특정 주소에 바인딩하면 그 주소를 그대로 안내한다', async (t) => {
+  const lines = [];
+  const hub = await server.start({
+    host: '127.0.0.1',
+    port: 0,
+    dbFile: ':memory:',
+    log: (m) => lines.push(m),
+  });
+  t.after(() => hub.close());
+
+  assert.match(lines.join('\n'), /앱 설정에 넣을 주소: 127\.0\.0\.1:\d+/);
+});
+
 test('resolveBindHost: tailscale 주소를 못 찾으면 조용히 넘어가지 않고 실패한다', () => {
   const noTailscale = { wlan0: [{ family: 'IPv4', address: '192.168.0.5' }] };
 

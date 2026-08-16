@@ -76,4 +76,35 @@ function resolveBindHost(configured, interfaces = os.networkInterfaces()) {
   return { host: found.address, iface: found.iface, tailscaleOnly: true };
 }
 
-module.exports = { isTailscaleIp, findTailscaleAddress, resolveBindHost, TAILSCALE_CIDR };
+/**
+ * 이 기기에서 남들이 접속할 수 있는 IPv4 주소들.
+ *
+ * 0.0.0.0 에 바인딩하면 로그에 "0.0.0.0" 이 찍히는데 그건 접속 주소가 아니라
+ * "모든 인터페이스에서 듣는다"는 뜻이다. 앱 설정에 0.0.0.0 을 넣으면 당연히 안 붙는다.
+ * 그 혼동을 없애려고 시작할 때 실제로 넣어야 할 주소를 찍어 준다.
+ *
+ * @param {NodeJS.Dict<os.NetworkInterfaceInfo[]>} [interfaces] 테스트 주입용
+ * @returns {Array<{ iface: string, address: string, tailscale: boolean }>}
+ */
+function listReachableAddresses(interfaces = os.networkInterfaces()) {
+  const found = [];
+
+  for (const [iface, addresses] of Object.entries(interfaces)) {
+    for (const info of addresses ?? []) {
+      if (info.family !== 'IPv4' && info.family !== 4) continue;
+      if (info.internal) continue; // 127.0.0.1 은 다른 기기에서 못 쓴다
+      found.push({ iface, address: info.address, tailscale: isTailscaleIp(info.address) });
+    }
+  }
+
+  // Tailscale 주소를 먼저 보여 준다. 외부망까지 쓰는 경우 그게 정답이기 때문이다.
+  return found.sort((a, b) => Number(b.tailscale) - Number(a.tailscale));
+}
+
+module.exports = {
+  isTailscaleIp,
+  findTailscaleAddress,
+  listReachableAddresses,
+  resolveBindHost,
+  TAILSCALE_CIDR,
+};

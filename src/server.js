@@ -190,6 +190,7 @@ async function start(opts = {}) {
 
   const actualPort = httpServer.address().port;
   log(`listening on ws://${host}:${actualPort}${config.wsPath}`);
+  logReachableAddresses(log, host, actualPort);
 
   async function close() {
     clearInterval(heartbeat);
@@ -284,6 +285,31 @@ function onAuth(hub, conn, frame) {
   // 재접속이므로 ack 안 된 것까지 전부 다시 보낸다 (onlyNew 를 켜지 않는다).
   const flushed = router.deliverPending(hub, conn);
   if (flushed) hub.log(`flushed ${flushed} queued message(s) to ${deviceId}`);
+}
+
+/**
+ * 앱 설정에 넣어야 할 주소를 찍어 준다.
+ *
+ * 0.0.0.0 은 "모든 인터페이스에서 듣는다"는 뜻이지 접속 주소가 아니다.
+ * 그대로 앱에 넣으면 접속되지 않는데, 로그만 보면 그걸 알기 어렵다.
+ */
+function logReachableAddresses(log, host, port) {
+  if (host !== '0.0.0.0' && host !== '::') {
+    // 특정 주소에 묶었다면 그 주소가 곧 접속 주소다.
+    log(`앱 설정에 넣을 주소: ${host}:${port}`);
+    return;
+  }
+
+  const addresses = tailscale.listReachableAddresses();
+  if (addresses.length === 0) {
+    log('앱 설정에 넣을 주소: (외부에서 접근 가능한 IPv4 주소를 찾지 못했습니다 — 네트워크 연결 확인)');
+    return;
+  }
+
+  log('앱 설정에 넣을 주소 (0.0.0.0 을 그대로 넣으면 접속되지 않습니다):');
+  for (const { iface, address, tailscale: isTs } of addresses) {
+    log(`  ${address}:${port}  (${iface})${isTs ? '  ← Tailscale, 집 밖에서도 됨' : ''}`);
+  }
 }
 
 /** 현재 멤버 목록을 담은 welcome 을 보낸다. 접속 직후 말고도 멤버 구성이 바뀔 때마다 부른다. */

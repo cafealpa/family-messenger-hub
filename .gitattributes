@@ -1,0 +1,12 @@
+# 줄바꿈을 LF 로 고정한다.
+# start-hub.sh 가 CRLF 로 체크아웃되면 Termux 에서 shebang 이 깨져
+# "bad interpreter" 로 죽는다. 원인을 찾기 매우 성가신 종류의 고장이다.
+* text=auto eol=lf
+
+*.sh text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+
+*.sqlite binary
+*.png binary

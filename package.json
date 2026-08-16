@@ -1,0 +1,23 @@
+{
+  "name": "family-messenger-hub",
+  "version": "0.1.0",
+  "private": true,
+  "description": "가족 메신저 허브 — 암호문 중계 및 임시 보관 (평문 저장 금지)",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node --test \"test/*.test.js\""
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "ulid": "^3.0.2",
+    "ws": "^8.21.3"
+  },
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "tweetnacl": "^1.0.3"
+  }
+}

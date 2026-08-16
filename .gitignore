@@ -1,0 +1,9 @@
+node_modules/
+
+# 메시지 큐가 들어 있는 DB. 암호문뿐이지만 커밋할 이유가 없다.
+data/
+
+*.log
+*.log.*
+
+.DS_Store

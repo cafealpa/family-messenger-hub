@@ -53,6 +53,25 @@ node -v          # 22.5.0 이상이어야 한다
 Node 가 22.5 보다 낮으면 허브가 시작되지 않는다. 내장 SQLite(`node:sqlite`)가 필요하기 때문이다.
 `pkg upgrade nodejs-lts` 로 올린다.
 
+#### `sqlite` 패키지에 대해
+
+**허브는 Termux 의 `sqlite` 패키지를 필요로 하지 않는다.** SQLite 는 Node 바이너리 안에 있다.
+(예전 문서에는 설치 목록에 있었지만 그때도 쓰이지 않았다.)
+
+다만 **이미 깔려 있다면 지우지 말 것.** 두 가지 이유다.
+
+- Termux 는 바이너리 크기를 줄이려고 Node 를 시스템 라이브러리에 링크해 빌드하는 경우가 있다.
+  Node 가 `libsqlite3.so` 를 참조하고 있으면 패키지를 지우는 순간 허브가 실행되지 않는다.
+  확인: `ldd $(command -v node) | grep -i sqlite` — 출력이 있으면 반드시 남겨둔다.
+- `sqlite3` CLI 는 DB 를 직접 들여다볼 때 편하다. 없어도 §5 의 `node -e` 한 줄짜리들로 대신할 수 있다.
+
+깔려 있으면 이런 식으로 쓸 수 있다:
+
+```bash
+sqlite3 ~/family-messenger/hub/data/hub.sqlite \
+  "SELECT device_id, display_name, datetime(last_seen_at/1000,'unixepoch','localtime') AS last_seen FROM devices;"
+```
+
 ### 2.2 허브 코드
 
 ```bash

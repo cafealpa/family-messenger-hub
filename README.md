@@ -51,6 +51,11 @@ npm install
 
 받는 것은 순수 JS 패키지뿐이라 몇 초면 끝난다. 컴파일 도구가 필요 없다.
 
+Termux 의 `sqlite` 패키지는 **필요 없다** — SQLite 는 Node 바이너리 안에 있다.
+다만 이미 깔려 있다면 지우지 말 것. Termux 의 Node 가 시스템 `libsqlite3.so` 에
+링크돼 있을 수 있고(`ldd $(command -v node) | grep -i sqlite` 로 확인),
+`sqlite3` CLI 는 DB 를 직접 들여다볼 때 쓸모가 있다.
+
 ## 실행
 
 ```bash

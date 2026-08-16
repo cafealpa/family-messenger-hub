@@ -388,7 +388,7 @@ cd app && ./gradlew connectedDebugAndroidTest   # 12개 (기기 필요, 네이�
 
 - 허브: **Node.js 22.5+** (내장 `node:sqlite` 가 필요하다). 네이티브 모듈이 없어
   설치가 어디서든 동일하고 몇 초면 끝난다.
-- 앱: **JDK 17~21**. 시스템 기본이 25면 AGP 8.7이 거부한다.
+- 앱: **JDK 17~21**. 시스템 기본 JDK가 25면 AGP가 거부한다.
   Android Studio 번들 JBR 21로 검증했다.
 - Windows PowerShell에서 `enroll.js`에 JSON을 넘길 때는 `--stdin`을 쓴다.
   작은따옴표가 벗겨지고 BOM이 붙는다(스크립트가 BOM은 걷어내지만 따옴표 문제는 남는다).

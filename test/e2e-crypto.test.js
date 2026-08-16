@@ -10,7 +10,7 @@ const config = require('../src/config');
 const server = require('../src/server');
 const { DummyClient } = require('../scripts/dummy-client');
 const { enroll } = require('../scripts/enroll');
-const { readableRatio } = require('../scripts/verify-no-plaintext');
+const { readableRatio, looksLikePlaintext, longestPrintableRun } = require('../scripts/verify-no-plaintext');
 
 const SECRET = '엄마 몰래 케이크 사왔어';
 
@@ -70,8 +70,9 @@ test('E2E: 본문은 왕복하지만 허브는 읽지 못한다', async (t) => {
     assert.equal(ct.length, plain.length + 16);
     assert.equal(Buffer.from(row.nonce).length, 24);
 
-    // 균일 난수라면 UTF-8 로 읽을 수 있는 비율이 낮아야 한다
-    assert.ok(readableRatio(ct) < 0.5, `암호문이 너무 읽을 만하다: ${readableRatio(ct)}`);
+    // 판정은 비율이 아니라 "유효한 UTF-8 인가 + 긴 ASCII 구간이 있는가" 로 한다.
+    // 비율은 짧은 암호문에서 우연히 튀어 오탐을 낸다.
+    assert.equal(looksLikePlaintext(ct).suspicious, false, JSON.stringify(looksLikePlaintext(ct)));
   });
 
   await t.test('수신자마다 nonce 가 다르다', async () => {
@@ -127,10 +128,50 @@ test('verify-no-plaintext.js: 평문이 들어 있으면 실패로 잡아낸다'
   );
 });
 
-test('readableRatio: 평문은 높고 난수는 낮다', () => {
-  assert.ok(readableRatio(Buffer.from('저녁 뭐 먹어?', 'utf8')) > 0.9);
-  assert.ok(readableRatio(Buffer.from('hello family', 'utf8')) > 0.9);
+test('looksLikePlaintext: 평문은 잡고 난수는 통과시킨다', () => {
+  // 평문 — 반드시 잡혀야 한다
+  for (const text of ['저녁 뭐 먹어?', 'hello family, see you at home', '{"body":"내용"}']) {
+    const buf = Buffer.from(text, 'utf8');
+    assert.equal(looksLikePlaintext(buf).suspicious, true, `평문을 놓쳤다: ${text}`);
+  }
 
-  const random = require('crypto').randomBytes(256);
-  assert.ok(readableRatio(random) < 0.6, '난수가 읽을 만하게 나오면 기준이 잘못된 것');
+  // 평문의 base64 (Phase 1 방식) 도 잡아야 한다
+  const b64 = Buffer.from(Buffer.from('저녁 뭐 먹어?').toString('base64'), 'utf8');
+  assert.equal(looksLikePlaintext(b64).suspicious, true);
+
+  // 난수 앞뒤에 평문 조각이 박힌 경우
+  const embedded = Buffer.concat([
+    require('crypto').randomBytes(20),
+    Buffer.from('secret-password-here', 'utf8'),
+    require('crypto').randomBytes(20),
+  ]);
+  assert.equal(looksLikePlaintext(embedded).suspicious, true, '박혀 있는 평문을 놓쳤다');
+});
+
+test('looksLikePlaintext: 짧은 암호문에서 오탐이 나지 않는다', () => {
+  // 실패했던 사례가 55바이트짜리 암호문이었다. 비율 기반 판정은 여기서 종종 튀었다.
+  // 길이를 바꿔 가며 넉넉히 돌려 오탐이 하나도 없어야 한다.
+  const crypto = require('crypto');
+  let falsePositives = 0;
+
+  for (let length = 16; length <= 120; length += 1) {
+    for (let i = 0; i < 40; i += 1) {
+      if (looksLikePlaintext(crypto.randomBytes(length)).suspicious) falsePositives += 1;
+    }
+  }
+
+  assert.equal(falsePositives, 0, `난수 ${falsePositives}건을 평문으로 잘못 신고했다`);
+});
+
+test('longestPrintableRun', () => {
+  assert.equal(longestPrintableRun(Buffer.from('abc', 'utf8')), 3);
+  assert.equal(longestPrintableRun(Buffer.from([0x41, 0x00, 0x42, 0x43])), 2);
+  assert.equal(longestPrintableRun(Buffer.alloc(50)), 0);
+});
+
+test('readableRatio 는 진단용 지표일 뿐이다', () => {
+  // 평문에서는 확실히 높다
+  assert.ok(readableRatio(Buffer.from('저녁 뭐 먹어?', 'utf8')) > 0.9);
+  // 난수에서는 낮은 편이지만 튈 수 있다 — 그래서 판정 기준으로 쓰지 않는다
+  assert.ok(readableRatio(require('crypto').randomBytes(4096)) < 0.9);
 });

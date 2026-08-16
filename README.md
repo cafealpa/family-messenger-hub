@@ -29,21 +29,27 @@ scripts/
 test/                       50개
 ```
 
-의존성은 `ws` / `better-sqlite3` / `ulid` 셋뿐이다.
-`tweetnacl`은 devDependency로, 테스트와 더미 클라이언트에서만 쓴다 — 허브 서버 코드는
+런타임 의존성은 **순수 JS 두 개뿐**이다: `ws`, `ulid`.
+SQLite 는 Node 내장 `node:sqlite` 를 쓰므로 **네이티브 모듈이 없다** — 허브 폰에서
+컴파일할 것이 없다는 뜻이다.
+`tweetnacl`은 devDependency로, 테스트와 더미 클라이언트에서만 쓴다. 허브 서버 코드는
 암복호화를 하지 않으며 그게 이 프로젝트의 존재 이유다.
 
 ---
 
+## 요구 사항
+
+**Node 22.5.0 이상.** 내장 SQLite(`node:sqlite`)가 그때 들어왔다.
+`npm start` 는 `--experimental-sqlite` 플래그를 붙여 실행하므로 22.5~23.3 에서도 그대로 동작한다.
+
 ## 설치
 
 ```bash
-pkg install nodejs-lts sqlite      # Termux
+pkg install nodejs-lts      # Termux
 npm install
 ```
 
-`better-sqlite3`는 네이티브 모듈이라 **허브 폰에서 직접** 설치해야 한다.
-PC의 `node_modules`를 복사하면 동작하지 않는다.
+받는 것은 순수 JS 패키지뿐이라 몇 초면 끝난다. 컴파일 도구가 필요 없다.
 
 ## 실행
 

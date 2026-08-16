@@ -101,7 +101,7 @@ function handleSend(hub, conn, frame) {
   const accepted = [];
   const dropped = [];
 
-  hub.db.transaction(() => {
+  db.transaction(hub.db, () => {
     for (const p of frame.payloads) {
       // 자기 자신에게는 보내지 않는다. 발신자는 평문을 로컬에 갖고 있다.
       if (p.to === conn.deviceId) continue;
@@ -121,7 +121,7 @@ function handleSend(hub, conn, frame) {
       );
       accepted.push(p.to);
     }
-  })();
+  });
 
   // detail 에 본문을 남기지 않는다 (CLAUDE.md 불변 규칙 1).
   db.logEvent(
@@ -201,14 +201,14 @@ function handleAck(hub, conn, frame) {
   /** @type {Array<{msgId: string, senderId: string}>} */
   const removed = [];
 
-  hub.db.transaction(() => {
+  db.transaction(hub.db, () => {
     for (const msgId of frame.msgIds) {
       const row = lookup.get(msgId, conn.deviceId);
       if (!row) continue; // 이미 지워졌다. 중복 ack 는 무해하다.
       remove.run(msgId, conn.deviceId);
       removed.push({ msgId, senderId: row.sender_id });
     }
-  })();
+  });
 
   db.logEvent(hub.db, 'ack', conn.deviceId, `${removed.length}/${frame.msgIds.length}`);
 

@@ -52,7 +52,10 @@ log "supervisor started (pid $$)"
 while true; do
   rotate_if_needed
   log "starting node src/index.js (HUB_HOST=$HUB_HOST)"
-  node src/index.js >> "$LOG" 2>&1
+  # --experimental-sqlite: Node 22.5~23.3 에서 내장 SQLite 를 켜는 데 필요하다.
+  #   24 이상에서도 플래그는 그대로 받아들여지므로 조건 없이 붙인다.
+  # --disable-warning: 매 재시작마다 찍히는 ExperimentalWarning 으로 로그가 지저분해지는 것을 막는다.
+  node --experimental-sqlite --disable-warning=ExperimentalWarning src/index.js >> "$LOG" 2>&1
   code=$?
 
   if [ "$code" -eq "$EXIT_CONFIG" ]; then

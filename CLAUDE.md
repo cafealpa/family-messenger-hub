@@ -21,7 +21,9 @@
 - 6번 → `hub/test/e2e-crypto.test.js`, verify-no-plaintext 의 nonce 중복 검사
 
 ## 코드 규칙
-- 허브: Node.js 20+, CommonJS, **런타임** 의존성은 ws / better-sqlite3 / ulid 로 제한
+- 허브: Node.js **22.5+**, CommonJS, **런타임** 의존성은 ws / ulid 로 제한
+  - SQLite 는 Node 내장 `node:sqlite` 를 쓴다. **네이티브 모듈을 추가하지 않는다** —
+    허브는 Termux(Bionic libc)에서 도는데 네이티브 모듈은 거기서 설치가 되지 않는다.
   - 예외: `tweetnacl` 은 devDependency. 더미 클라이언트와 테스트에서만 쓴다.
     허브 서버 코드는 암복호화를 하지 않으며, 그게 이 프로젝트의 존재 이유다.
 - 앱: Kotlin, Jetpack Compose, Room, OkHttp, lazysodium-android
@@ -61,8 +63,9 @@
 
 ## 개발 환경 메모
 - 개발 머신은 Windows. 허브 실전 구동 환경은 Termux(Android/aarch64).
-  better-sqlite3는 네이티브 모듈이므로 **허브 폰에서 `npm install`이 필요**하다.
-  node_modules를 그대로 복사해 옮기지 말 것.
+  네이티브 모듈이 없으므로 설치가 어디서든 동일하다.
+- **Node 22.5 미만에서는 허브가 시작되지 않는다.** `node:sqlite` 가 없기 때문이며,
+  index.js 가 먼저 확인해서 무엇을 해야 하는지 알려 준다(종료 코드 78).
 - 앱 빌드는 JDK 17~21. 시스템 기본이 25면 AGP 8.7이 거부한다.
 - 허브 실행: `cd hub && npm start` (기본 포트 8787, 경로 `/ws`)
 - PowerShell 에서 `enroll.js` 에 JSON 을 넘길 때는 `--stdin` 을 쓸 것.

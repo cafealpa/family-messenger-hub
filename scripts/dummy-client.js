@@ -363,6 +363,17 @@ async function main() {
     return;
   }
 
+  /** @type {import('readline').Interface|undefined} */
+  let rl;
+
+  // process.exit() 로 즉시 끝내지 않는다. 소켓이 정리되는 중에 강제 종료하면
+  // 윈도우에서 libuv 어설션(uv_close)이 터진다. 핸들을 닫고 이벤트 루프가
+  // 자연히 비도록 두면 종료 코드 0 으로 깔끔하게 끝난다.
+  const shutdown = async () => {
+    rl?.close();
+    await client.close();
+  };
+
   client.on('deliver', (f) => {
     const known = client.messages.find((m) => m.msgId === f.msgId);
     console.log(`\n[${f.from}] ${known ? known.body : '(복호화 불가)'}`);
@@ -373,7 +384,7 @@ async function main() {
   client.on('sent', (f) => console.log(`  → 허브 접수 ${f.msgId}`));
   client.on('close', (code) => {
     console.log(`\n연결 종료 (${code})`);
-    process.exit(0);
+    rl?.close();
   });
 
   try {
@@ -391,13 +402,13 @@ async function main() {
   console.log(`멤버: ${client.members.map((m) => `${m.name}${m.online ? '*' : ''}`).join(', ') || '(없음)'}`);
   console.log('줄을 입력하면 전송. /members /queue /quit');
 
-  const rl = require('readline').createInterface({ input: process.stdin, output: process.stdout });
+  rl = require('readline').createInterface({ input: process.stdin, output: process.stdout });
   rl.on('line', async (line) => {
     const text = line.trim();
     if (!text) return;
     if (text === '/quit') {
-      await client.close();
-      process.exit(0);
+      await shutdown();
+      return;
     }
     if (text === '/members') {
       console.log(

@@ -46,8 +46,12 @@ Termux는 구글 플레이 버전이 오래되어 동작하지 않는다. **F-Dr
 
 ```bash
 pkg update
-pkg install nodejs-lts sqlite git
+pkg install nodejs-lts git
+node -v          # 22.5.0 이상이어야 한다
 ```
+
+Node 가 22.5 보다 낮으면 허브가 시작되지 않는다. 내장 SQLite(`node:sqlite`)가 필요하기 때문이다.
+`pkg upgrade nodejs-lts` 로 올린다.
 
 ### 2.2 허브 코드
 
@@ -57,8 +61,12 @@ cd ~/family-messenger/hub
 npm install
 ```
 
-`npm install`은 반드시 **이 폰에서** 실행한다. `better-sqlite3`가 네이티브 모듈이라
-PC에서 만든 `node_modules`를 복사하면 동작하지 않는다.
+받는 것은 순수 JS 패키지 두 개(`ws`, `ulid`)뿐이라 몇 초면 끝난다.
+컴파일 도구(python, make, clang)가 필요 없다.
+
+> 예전에는 `better-sqlite3` 를 썼는데 Termux 에서 설치가 되지 않았다. 동봉된 미리 빌드
+> 바이너리가 glibc·musl 용뿐인데 Termux 는 Bionic libc 를 쓰기 때문이다.
+> 지금은 Node 내장 SQLite 를 쓰므로 그 문제가 없다.
 
 ### 2.3 동작 확인
 
@@ -234,7 +242,8 @@ tail -50 ~/hub.log
 |---|---|---|
 | `Tailscale 주소를 찾지 못했습니다` | Tailscale 미기동 | Tailscale 앱 실행·로그인. 30초 뒤 자동 재시도 |
 | `EADDRINUSE` | 8787 포트를 이미 누가 씀 | 옛 프로세스 종료: `pkill -f 'node src/index.js'` |
-| `Cannot find module` | npm install 안 함 / 옮겨온 node_modules | `cd ~/family-messenger/hub && rm -rf node_modules && npm install` |
+| `Cannot find module` | npm install 안 함 | `cd ~/family-messenger/hub && rm -rf node_modules && npm install` |
+| `내장 SQLite(node:sqlite)가 필요하며` | Node 가 22.5 미만 | `pkg upgrade nodejs-lts` |
 | 로그가 갱신 안 됨 | 부팅 훅이 안 걸림 | Termux:Boot 앱을 한 번 실행 |
 | 아무것도 없음 | wake-lock 없이 폰이 잠듦 | `termux-wake-lock` 확인, 배터리 최적화 예외 |
 

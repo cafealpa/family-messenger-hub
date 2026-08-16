@@ -431,10 +431,16 @@ data class OutboxEntity(
 
 ### 6.4 허브 운영 (Termux)
 
+> **의존성 정정 (허브 폰 설치 중 발견)**: 초안의 `better-sqlite3` 는 Termux 에서 설치되지 않는다.
+> 동봉된 미리 빌드 바이너리가 glibc·musl 용뿐인데 Termux 는 **Bionic libc** 를 쓰기 때문이고,
+> 소스 빌드를 하려면 폰에 python·make·clang 을 깔아야 한다.
+> Node 22.5+ 의 내장 `node:sqlite` 로 교체해 네이티브 의존성을 0으로 만들었다.
+> 이제 런타임 의존성은 순수 JS 인 `ws` 와 `ulid` 뿐이다.
+
 ```bash
 # 최초 설치
-pkg install nodejs-lts sqlite
-npm install ws better-sqlite3 ulid
+pkg install nodejs-lts       # Node 22.5 이상
+npm install                  # 순수 JS 패키지만, 몇 초
 
 # 필수: 잠자기 방지
 termux-wake-lock
@@ -463,7 +469,7 @@ termux-wake-lock
 
 - 모노레포 스캘폴딩 (§3 구조)
 - `CLAUDE.md`, `PROTOCOL.md` 작성
-- 허브: `npm init` + ws + better-sqlite3
+- 허브: `npm init` + ws + ulid (SQLite 는 Node 내장 `node:sqlite`)
 - 앱: 빈 Compose 프로젝트, minSdk 26 / targetSdk 35
 
 **완료 기준**: 허브가 8787 포트에서 WS 연결을 수락하고 에코를 반환한다.

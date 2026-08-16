@@ -283,7 +283,8 @@ Kotlin(lazysodium) ↔ Node(tweetnacl/crypto) **교차 구현 검증**이라는 
 | 대면 검증 | 상대 QR 스캔 | 안전 번호 대조 | 보안 성질 동일(양쪽 공개키 해시), 카메라 권한 불필요, 검증 가능. 내 정보 QR 표시는 유지 |
 | ULID | 명시 없음 | 단조 생성기 강제 | 표준 생성기는 같은 ms 안 정렬을 보장 못 해 연타 메시지가 뒤집힘 |
 | release 난독화 | "Phase 5에서 켠다" | 끈 채로 둠 | Room/serialization/JNA가 리플렉션 사용. 스토어 배포 없어 크기 이득 없음 |
-| 허브 의존성 | ws/better-sqlite3/ulid | + `tweetnacl` (dev) | 더미 클라이언트가 앱과 같은 암호화를 해야 E2E 검증이 성립. **런타임 아님** |
+| 허브 SQLite | `better-sqlite3` | Node 내장 `node:sqlite` | better-sqlite3 는 네이티브 모듈이라 Termux 에서 설치되지 않았다. 동봉 바이너리는 glibc·musl 용뿐인데 Termux 는 Bionic libc 다. 내장 모듈로 바꿔 네이티브 의존성을 0으로 만들었다 |
+| 허브 의존성 | ws/better-sqlite3/ulid | ws/ulid + `tweetnacl` (dev) | 위와 같음. tweetnacl 은 더미 클라이언트가 앱과 같은 암호화를 해야 E2E 검증이 성립해서 넣었다. **런타임 아님** |
 
 추가한 것(계획서에 없던 것):
 
@@ -385,8 +386,8 @@ cd app && ./gradlew connectedDebugAndroidTest   # 12개 (기기 필요, 네이�
 
 ## 11. 개발 환경 메모
 
-- 허브: Node.js 20+. `better-sqlite3`는 네이티브 모듈이라 **허브 폰에서 직접 설치**해야 한다.
-  PC의 `node_modules`를 복사하면 동작하지 않는다.
+- 허브: **Node.js 22.5+** (내장 `node:sqlite` 가 필요하다). 네이티브 모듈이 없어
+  설치가 어디서든 동일하고 몇 초면 끝난다.
 - 앱: **JDK 17~21**. 시스템 기본이 25면 AGP 8.7이 거부한다.
   Android Studio 번들 JBR 21로 검증했다.
 - Windows PowerShell에서 `enroll.js`에 JSON을 넘길 때는 `--stdin`을 쓴다.
